@@ -16,6 +16,7 @@ class CreateClaimsTable extends Migration {
 			$table->integer('zone_id')->unsigned();
 			$table->datetime('authorized_from');
 			$table->datetime('authorized_to');
+			$table->string('job_type');
 			$table->boolean('status')->default(true);
 			$table->boolean('is_draft')->default(false);
 			$table->datetime('claim_date');

@@ -32,11 +32,11 @@
                 <div>New</div>
                 <div class="container-fluid">
                     <div class="row">
-                        <div class="col-sm-3">
+                        <div class="col-sm-4">
                             <label for="new_zone_name">Name:</label>
                             <input type="text" class="form-control newZoneName" name="new_zone_name" />
                         </div>
-                        <div class="col-sm-3">
+                        <div class="col-sm-4">
                             <label for="new_zone_parent">Belongs to:</label>
                             <select class="form-control parentSelector btn-group" name="new_zone_parent">
                                 @foreach($sites as $site)
@@ -44,7 +44,7 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-sm-3">
+                        <div class="col-sm-4">
                             <label for="new_zone_person">Person:</label>
                             <select class="form-control personSelector btn-group" name="new_zone_person" multiple>
                                 @foreach($users as $user)

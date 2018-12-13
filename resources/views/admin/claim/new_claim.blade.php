@@ -44,6 +44,7 @@
                 <input class="form-control" type="text" id="target_person_organization">
             </div>
         </div>
+        <!--
         <div class="row">
             <div class="col-sm-3"></div>
             <div class="col-sm-3"></div>
@@ -54,6 +55,7 @@
                 <input class="form-control" type="text" id="timeLimit">
             </div>
         </div>
+        -->
         <div class="row">
             <div class="col-sm-3"></div>
             <div class="col-sm-3"></div>
@@ -124,13 +126,18 @@
         console.log(foo);
         $.each(foo, (i,e) => {
             choices.push(e.name);
+
+            //console.log("szedem");
+
+            var arrId = e.user_many_relation.map((user) => user.id);
+            var arrName = e.user_many_relation.map((user) => user.firstname + " " + user.lastname);
+
             var obj = {
-                'firstname': e.user.firstname,
-                'lastname': e.user.lastname,
+                'name': arrName,
                 'zone_name': e.name,
                 'zone_id': e.id,
-                'user_id': e.user.id,
-                'site_id': e.site.id,
+                'user_id': arrId,
+                'site_id': e.site_name,
                 'site_name': e.site.name
             };
             zoness.push(obj);
@@ -195,15 +202,24 @@
 
             if($.inArray(inputValue, choices) !== -1){
                 var zonessKey = getKeyByValue(zoness, inputValue);
+
                 var content = ''+
                 '   <div class="row">'+
-                '       <div class="col-sm-5 zoneDiv" style="display: flex; justify-content: space-between;">'+
+                '       <div class="col-sm-2 zoneDiv" style="display: flex; justify-content: space-between;">'+
                 '           <label for="">Zone:</label>'+
                 '           <span class="inputValue" inputValue="'+inputValue+'">' + inputValue + '</span>'+
                 '       </div>'+
-                '       <div class="col-sm-5 personDiv" style="display: flex; justify-content: space-between;">'+
+                '       <div class="col-sm-2 siteDiv" style="display: flex; justify-content: space-between;">'+
+                '           <label for="">Site:</label>'+
+                '           <span class="inputValue" inputValue="'+zoness[zonessKey].site_name+'">' + zoness[zonessKey].site_name + '</span>'+
+                '       </div>'+
+                '       <div class="col-sm-3 personDiv" style="display: flex; justify-content: space-between;">'+
                 '           <label for="">Authorizing person:</label>'+
-                            zoness[zonessKey].firstname + ' ' + zoness[zonessKey].lastname+
+                            zoness[zonessKey].name.join(', ')+
+                '       </div>'+
+                '       <div class="col-sm-3 timeLimitDiv" data-zoneid="'+zoness[zonessKey].zone_id+'" style="display: flex; justify-content: space-between;">'+
+                '           <label for="">Time limit for staying within the zone</label>'+
+                '           <input class="form-control timeLimit" data-zoneid="'+zoness[zonessKey].zone_id+'" type="text">'+
                 '       </div>'+
                 '       <div class="col-sm-2">'+
                 '           <button class="btn btn-default removeZone" onclick="removeZoneHandler(this)"><i class="glyphicon glyphicon-minus"></i></button>'+
@@ -220,6 +236,8 @@
                 choices = choices.filter((string) => string !== inputValue);
 
                 demoRefreshHandler();
+
+                initDatepicker(zoness[zonessKey].zone_id);
             } else {
                 Snackbar.show({text: 'no valid zone selected', backgroundColor: '#515aa5', actionTextColor: '#fff', fontFamily: 'Helvetica Neue', duration: 5000, pos: 'bottom-center', borderRadius: '5px'});
             }
@@ -264,6 +282,12 @@
         };
 
         var submitFormHandler = () => {
+            var arrTimeLimit = {};
+            $.each($('.timeLimit'), (i, e) => arrTimeLimit[$(e).data('zoneid')] = {
+                    time_limit_from: moment($(e).data('daterangepicker').startDate._d).format('Y-MM-DD HH:mm:ss')
+                    , time_limit_to: moment($(e).data('daterangepicker').endDate._d).format('Y-MM-DD HH:mm:ss')
+                });
+
             $.ajax({
                 url: "/claim/submit-claim",
                 method: "POST",
@@ -273,8 +297,7 @@
                     , job_type: $('input[name="job_type"]').val()
                     , claim_date: moment($('#claimDate').val()).format('Y-MM-DD HH:mm:ss')
                     , zones: removedChoicess
-                    , time_limit_from: moment($('#timeLimit').data('daterangepicker').startDate._d).format('Y-MM-DD HH:mm:ss')
-                    , time_limit_to: moment($('#timeLimit').data('daterangepicker').endDate._d).format('Y-MM-DD HH:mm:ss')
+                    , time_limit: arrTimeLimit
                 },
                 success: data => {
                     console.log(data);
@@ -287,26 +310,28 @@
             });
         };
 
-        $('#timeLimit').daterangepicker({
-            timePicker: true,
-            "timePicker24Hour": true,
-            startDate: moment().startOf('hour'),
-            endDate: moment().startOf('hour').add(32, 'hour'),
-            locale: {
-                format: 'MMMM DD, YYYY hh:mm A'
-            },
-            ranges: {
-                'Today': [moment(), moment()],
-                'Tomorrow': [moment().add(1, 'days'), moment().add(1, 'days')],
-                'Next 7 Days': [moment(), moment().add(6, 'days')],
-                'Next 30 Days': [moment(), moment().add(30, 'days')],
-                'This Month': [moment().startOf('month'), moment().endOf('month')],
-                'Next Month': [moment().endOf('month') + 1, moment().endOf('month').add(1, 'months') ],
-                'This Year': [moment().startOf('year'), moment().endOf('year')],
-                'Next Year': [moment().endOf('year').add(1, 'days'), moment().endOf('year').add(1, 'years')]
-            },
-            minDate: moment()
-        });
+        var initDatepicker = (zoneid) => {
+            $('.timeLimit').daterangepicker({
+                timePicker: true,
+                "timePicker24Hour": true,
+                startDate: moment().startOf('hour'),
+                endDate: moment().startOf('hour').add(32, 'hour'),
+                locale: {
+                    format: 'MMMM DD, YYYY hh:mm A'
+                },
+                ranges: {
+                    'Today': [moment(), moment()],
+                    'Tomorrow': [moment().add(1, 'days'), moment().add(1, 'days')],
+                    'Next 7 Days': [moment(), moment().add(6, 'days')],
+                    'Next 30 Days': [moment(), moment().add(30, 'days')],
+                    'This Month': [moment().startOf('month'), moment().endOf('month')],
+                    'Next Month': [moment().endOf('month') + 1, moment().endOf('month').add(1, 'months') ],
+                    'This Year': [moment().startOf('year'), moment().endOf('year')],
+                    'Next Year': [moment().endOf('year').add(1, 'second'), moment().endOf('year').add(1, 'years')]
+                },
+                minDate: moment()
+            });
+        };
 
         $('#claimDate').daterangepicker({
             timePicker: true,

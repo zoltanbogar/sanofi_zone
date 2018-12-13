@@ -9,8 +9,10 @@
 namespace App\Http\Controllers\Admin\Claim;
 
 use App\User;
-use Claim\Claim;
-use Zone\Zone;
+use App\Claim;
+use App\Zone;
+use App\ApprovedClaim;
+use App\RejectedClaim;
 //use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -28,7 +30,7 @@ class ClaimController extends TitanAdminController
     {
         $user = Auth::user();
         $tblAllUser = User::select('id', 'firstname', 'lastname')->/*where('id', '!=' , $user->id)->*/get();
-        $tblAllZone = Zone::with('user')->with('site')->/*where('id', '!=' , $user->id)->*/get();
+        $tblAllZone = Zone::with('userManyRelation')->with('site')->/*where('id', '!=' , $user->id)->*/get();
         //$actualTime = Carbon::now()->format('F d, Y h:i A');
 
         return $this->view('claim/new_claim', ["user" => $user, "tblAllUser" => $tblAllUser, "tblAllZone" => $tblAllZone/*, "time" => $actualTime*/]);
@@ -41,7 +43,9 @@ class ClaimController extends TitanAdminController
         $claim = \DB::table('claims')
             ->join('zones', 'zones.id', '=', 'claims.zone_id')
             ->join('users', 'claims.target_user_id', '=', 'users.id')
-            ->select('users.*', 'zones.*', 'claims.*')
+            ->leftjoin('approved_claims', 'claims.id', '=', 'approved_claims.claim_id')
+            ->leftjoin('rejected_claims', 'claims.id', '=', 'rejected_claims.claim_id')
+            ->select('users.*', 'zones.*', 'claims.*', 'rejected_claims.created_at as rejected_claims_created_at', 'approved_claims.created_at as approved_claims_created_at')
             ->where('claims.claimer_user_id', '=', $user->id)
             ->get();
 
@@ -55,8 +59,11 @@ class ClaimController extends TitanAdminController
         $zones = \DB::table('zones')
             ->join('claims', 'zones.id', '=', 'claims.zone_id')
             ->join('users', 'claims.target_user_id', '=', 'users.id')
-            ->select('users.*', 'zones.*', 'claims.*', 'claims.id as claim_id')
+            ->leftjoin('approved_claims', 'claims.id', '=', 'approved_claims.claim_id')
+            ->leftjoin('rejected_claims', 'claims.id', '=', 'rejected_claims.claim_id')
+            ->select('users.*', 'zones.*', 'claims.*', 'claims.id as claim_id', 'rejected_claims.created_at as rejected_claims_created_at', 'approved_claims.created_at as approved_claims_created_at')
             //->where('zones.user_id', '=', $user->id)
+            ->orderBy('claims.claim_date', 'ASC')
             ->get();
 
         //dd($zones);
@@ -66,29 +73,49 @@ class ClaimController extends TitanAdminController
 
     public function delete()
     {
-        return $this->view('claim/deletion');
+        $user = Auth::user();
+        $myClaims = $zones = \DB::table('claims')
+            ->join('zones', 'zones.id', '=', 'claims.zone_id')
+            ->join('sites', 'zones.site_id', '=', 'sites.id')
+            ->join('users', 'claims.target_user_id', '=', 'users.id')
+            ->where('claims.claimer_user_id', '=', $user->id)
+            ->select('zones.name as zone_name', 'claims.*', 'sites.name as site_name', 'claims.claim_date as claim_date', 'users.firstname', 'users.lastname')
+            ->orderBy('claims.claim_date', 'DESC')
+            ->get();
+
+        $targetClaims = $zones = \DB::table('claims')
+            ->join('zones', 'zones.id', '=', 'claims.zone_id')
+            ->join('sites', 'zones.site_id', '=', 'sites.id')
+            ->where('claims.target_user_id', '=', $user->id)
+            ->orderBy('claims.claim_date', 'DESC')
+            ->get();
+
+        return $this->view('claim/deletion', ["myClaims" => $myClaims, "targetClaims" => $targetClaims]);
     }
 
     public function submit(Request $request)
     {
         $data = $request->all();
-        if($data["claimer_id"] == "") return Response::json("Missing claimer user id", 404);
-        if($data["targer_user_id"] == "") return Response::json("Missing target user id", 404);
-        if($data["job_type"] == "") return Response::json("Missing job type id", 404);
-        if($data["claim_date"] == "") return Response::json("Missing job type id", 404);
-        if(empty($data["zones"])) return Response::json("Missing job type id", 404);
-        if($data["time_limit_from"] == "") return Response::json("Missing job type id", 404);
-        if($data["time_limit_to"] == "") return Response::json("Missing job type id", 404);
+
+        $this->validate($request, [
+            'claimer_id' => 'required|numeric',
+            'targer_user_id' => 'required|numeric',
+            'job_type' => 'required',
+            'claim_date' => 'required|date',
+            'time_limit' => 'required|present',
+            'zones' => 'present|array',
+
+        ]);
 
         foreach($data["zones"] as $key => $zone){
             $claim = new Claim();
             $claim->claimer_user_id = $data["claimer_id"];
             $claim->target_user_id = $data["targer_user_id"];
             $claim->zone_id = $zone;
-            $claim->authorized_from = $data["time_limit_from"];
-            $claim->authorized_to = $data["time_limit_to"];
+            $claim->authorized_from = $data["time_limit"][$zone]["time_limit_from"];
+            $claim->authorized_to = $data["time_limit"][$zone]["time_limit_to"];
             $claim->job_type = $data["job_type"];
-            $claim->claimed_at = $data["claim_date"];
+            $claim->claim_date = $data["claim_date"];
 
             $claim->save();
         }
@@ -103,9 +130,57 @@ class ClaimController extends TitanAdminController
         ]);
 
         $data = $request->all();
-        $user = Auth::user();
-        $claim = Claim::where('id', '=', $data["claim_id"])->first();
 
-        return Response::json(['success' => "Claim approved!", "user" => $user, "claim" => $claim], 200);
+        $approvedClaim = new ApprovedClaim();
+        $approvedClaim->claim_id = $data["claim_id"];
+        $approvedClaim->save();
+
+        $rejectedClaim = RejectedClaim::where('claim_id', '=', $data["claim_id"])->first();
+        if($rejectedClaim != NULL)
+            $rejectedClaim->delete();
+
+        return Response::json(['success' => "Claim approved!", "text" => "Approved"], 200);
+    }
+
+    public function rejectClaim(Request $request)
+    {
+        $this->validate($request, [
+            'claim_id' => 'required|numeric'
+        ]);
+
+        $data = $request->all();
+
+        $rejectedClaim = new RejectedClaim();
+        $rejectedClaim->claim_id = $data["claim_id"];
+        $rejectedClaim->save();
+
+        $approvedClaim = ApprovedClaim::where('claim_id', '=', $data["claim_id"])->first();
+        if($approvedClaim != NULL)
+            $approvedClaim->delete();
+
+        return Response::json(['success' => "Claim rejected!", "text" => "Rejected"], 200);
+    }
+
+    public function deleteClaim(Request $request)
+    {
+        $this->validate($request, [
+            'claim_id' => 'required|numeric'
+        ]);
+
+        $data = $request->all();
+
+        $rejectedClaim = RejectedClaim::where('claim_id', '=', $data["claim_id"])->first();
+        if($rejectedClaim != NULL)
+            $rejectedClaim->delete();
+
+        $approvedClaim = ApprovedClaim::where('claim_id', '=', $data["claim_id"])->first();
+        if($approvedClaim != NULL)
+            $approvedClaim->delete();
+
+        $claim = Claim::find($data["claim_id"]);
+        if($claim != NULL)
+            $claim->delete();
+
+        return Response::json(['success' => "Claim deleted!"], 200);
     }
 }

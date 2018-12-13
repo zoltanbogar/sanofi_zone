@@ -99,6 +99,8 @@ Route::group(['middleware' => ['auth', 'auth.admin'], 'namespace' => 'Admin'],
             Route::get('/approval', 'ClaimController@approval');
             Route::post('submit-claim', 'ClaimController@submit');
             Route::post('approve-claim', 'ClaimController@approveClaim');
+            Route::post('reject-claim', 'ClaimController@rejectClaim');
+            Route::post('delete-claim', 'ClaimController@deleteClaim');
             //Route::get('/website', 'HistoryController@website');
         });
 

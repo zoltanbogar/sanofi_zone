@@ -13,7 +13,7 @@
                 Authorization interval
             </div>
             <div class="col-sm-2">
-                Claimed at
+                Claim date
             </div>
             <div class="col-sm-2">
                 Job type
@@ -22,7 +22,7 @@
                 Claimer user
             </div>
             <div class="col-sm-2">
-                Closed at
+                Status
             </div>
         </div>
         @foreach ($tblClaim as $claim)
@@ -37,7 +37,7 @@
                     {{ $claim->authorized_from . " - " . $claim->authorized_to }}
                 </div>
                 <div class="col-sm-2">
-                    {{ $claim->claimed_at }}
+                    {{ $claim->claim_date }}
                 </div>
                 <div class="col-sm-2">
                     {{ $claim->job_type }}
@@ -46,10 +46,12 @@
                     {{ $claim->claimer_user_id }}
                 </div>
                 <div class="col-sm-2">
-                    @if($claim->closed_at == null)
-                        Pending
+                    @if($claim->rejected_claims_created_at != NULL)
+                        Rejected at {{ $claim->rejected_claims_created_at }}
+                    @elseif($claim->approved_claims_created_at != NULL)
+                        Approved at {{ $claim->approved_claims_created_at }}
                     @else
-                        {{ $claim->closed_at }}
+                        Pending
                     @endif
                 </div>
             </div>

@@ -5103,7 +5103,8 @@ textarea.input-group-sm>.input-group-btn>.btn {
 
 .navbar-static-top {
     z-index: 1000;
-    border-width: 0 0 1px
+    border-width: 0 0 1px;
+    padding: 0;
 }
 
 @media (min-width:768px) {
@@ -5197,7 +5198,9 @@ textarea.input-group-sm>.input-group-btn>.btn {
 }
 
 .navbar-nav {
-    margin: 7.5px -15px
+    margin: 7.5px -15px;
+    flex-direction: row !important;
+    float: right !important;
 }
 
 .navbar-nav>li>a {
@@ -18214,6 +18217,10 @@ a:hover {
     float: right
 }
 
+.navbar-custom-menu {
+    flex-basis: calc(100% - 50px);
+}
+
 @media (max-width:991px) {
     .main-header .navbar-custom-menu a,
     .main-header .navbar-right a {
@@ -18240,7 +18247,8 @@ a:hover {
     background-color: transparent;
     background-image: none;
     padding: 15px 15px;
-    font-family: fontAwesome
+    font-family: fontAwesome;
+    flex-basis: 50px;
 }
 
 .main-header .sidebar-toggle:before {

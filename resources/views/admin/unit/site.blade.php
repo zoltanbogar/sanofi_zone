@@ -38,6 +38,7 @@
 
 @section('styles')
     <link rel="stylesheet" href="{{ asset('css/snackbar.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/bootstrap-multiselect.css') }}" />
     <style>
         li {
             list-style: none;
@@ -51,7 +52,17 @@
 
 @section('scripts')
     <script src="{{ asset('js/snackbar.js') }}"></script>
+    <script src="{{ asset('js/bootstrap-multiselect.js') }}"></script>
     <script>
+        $(document).ready(() => {
+            $('.parentSelector').multiselect({
+                numberDisplayed: 1,
+                enableFiltering: true,
+                maxHeight: 200,
+                enableCaseInsensitiveFiltering: true,
+            });
+        });
+
         var toggleUnitHandler = obj => {
             var objButtonIcon = $(obj)
                 .children('i');

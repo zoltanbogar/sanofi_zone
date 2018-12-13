@@ -1,6 +1,6 @@
 <?php
 
-namespace ApprovedClaim;
+namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 
