@@ -27,6 +27,6 @@ class CreateUserZoneTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('zone_user');
+        Schema::dropIfExists('user_zone');
     }
 }

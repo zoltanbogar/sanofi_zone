@@ -15,13 +15,16 @@ class SitesTableSeeder extends Seeder
         //Site::truncate();
 
         Site::create([
-            'name' => "Veres"
+            'name' => "Veres",
+	        'parent_id' => 0
         ]);
         Site::create([
-            'name' => "Csanyikvölgy"
+            'name' => "Csanyikvölgy",
+	        'parent_id' => 0
         ]);
         Site::create([
-            'name' => "Újpest"
+            'name' => "Újpest",
+	        'parent_id' => 0
         ]);
         Site::create([
             'name' => "Kábszer raktár",

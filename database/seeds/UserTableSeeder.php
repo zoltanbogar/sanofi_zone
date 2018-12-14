@@ -19,6 +19,7 @@ class UserTableSeeder extends Seeder
             'lastname'     => 'Boga',
             'phone'    => '123456789',
             'company' => 'Sanofi',
+	        'site_name' => 'Zengo',
             'email'        => 'boga.zsolt@zengo.eu',
             'password'     => bcrypt('admin'),
             'confirmed_at' => Carbon::now()
@@ -38,6 +39,7 @@ class UserTableSeeder extends Seeder
             'lastname'     => 'Bogar',
             'phone'    => '123456789',
             'company' => 'Sanofi',
+	        'site_name' => 'Zengo',
             'email'        => 'bogar.zoltan@zengo.eu',
             'password'     => bcrypt('admin'),
             'confirmed_at' => Carbon::now()
@@ -59,6 +61,7 @@ class UserTableSeeder extends Seeder
             'company' => 'Sanofi',
             'email'        => 'admin@laravel-admin.dev',
             'password'     => bcrypt('admin'),
+            'site_name' => 'Sanofi',
             'confirmed_at' => Carbon::now()
         ]);
 
@@ -76,6 +79,7 @@ class UserTableSeeder extends Seeder
                 'company' => 'Sanofi',
                 'email'        => $faker->email,
                 'password'     => bcrypt('secret'),
+	            'site_name' => 'Sitename',
                 'confirmed_at' => Carbon::now()
             ]);
 
